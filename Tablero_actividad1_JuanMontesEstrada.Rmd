@@ -1,0 +1,160 @@
+---
+title: "Carrera La Luz 2022"
+output: 
+  flexdashboard::flex_dashboard:
+    theme:
+      bg: "#FFFFFF" # Color del fondo
+      fg: "#198198" # Color del fondo del titulo
+      primary: "#198198"
+      base_font:
+        google: Sen
+      code_font:
+        google: JetBrains Mono
+    orientation: rows
+    vertical_layout: fill
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+#Se llaman las librerias usadas en todo el dashboard
+library(flexdashboard)
+library(ggplot2)
+library(paqueteMET)
+library(treemap)
+library(dplyr)
+library(DT)
+
+#Se crea una paleta personalizada que será uasada en el treemap
+myPal <- c(
+  rgb(32, 93, 88, maxColorValue = 255),  #rgb (red,green,blue)
+  rgb(48, 140, 132, maxColorValue = 255),  
+  rgb(66, 191, 181, maxColorValue = 255),  
+  rgb(85, 247, 234, maxColorValue = 255),
+  rgb(244,244, 244, maxColorValue = 255))
+
+#Carga de datos Carrera La luz 2022
+data("CarreraLuz22")
+
+#Subsets para análisis por sexo
+CarreraLuz22M = subset(CarreraLuz22, CarreraLuz22$sex=="Hombre")
+CarreraLuz22F = subset(CarreraLuz22, CarreraLuz22$sex=="Mujer")
+
+```
+# Metricas {data-icon=fa-ruler} 
+##
+### Número de participantes
+```{r}
+valueBox(value = paste(length(CarreraLuz22$timerun),"Atletas"), 
+         caption = "Número de participantes", 
+         icon = "ion-ios-people", 
+         color = "#198198")
+```
+
+### Tiempo ganador
+```{r}
+valueBox(value =paste(round(min(CarreraLuz22$timerun/60),1), "min"), 
+         caption = "Tiempo ganador", 
+         icon = "ion-ribbon-a", 
+         color = "#198198")
+```
+
+### Tiempo promedio
+```{r}
+valueBox(value = paste(round(mean(CarreraLuz22$timerun/60),2),"min"), 
+         caption = "Tiempo promedio de carrera", 
+         icon = "ion-ios-time-outline", 
+         color = "#198198")
+```
+
+##
+### Número de atletas por categoría y sexo
+```{r}
+conteo <- table(CarreraLuz22$sex,CarreraLuz22$categoria)
+
+barplot(conteo, main="Número de atletas por categoria y sexo",  
+xlab="Categorías",
+col=c("#2e857e","#53f0e3"),
+legend = rownames(conteo),
+las=1, ylim = c(0,1200), 
+names.arg=c("Juvenil","Abierta","Veteranos A","Veteranos B","Veteranos C"))
+```
+
+### Distribución del tiempo de carrera en minutos por sexo
+```{r}
+boxplot(CarreraLuz22$timerun/60~CarreraLuz22$sex,
+main = "Distribución del tiempo carrera La Luz 2022",
+ylab="tiempo (min)",
+xlab = "sexo", las=1,
+col=c("#2e857e","#53f0e3"))
+```
+
+### Distribución de los tiempos por edades y sexo
+```{r}
+ggplot(CarreraLuz22, aes(y=timerun/60 , x=edad, color=sex))+
+geom_point()+
+  scale_x_continuous("Edad del atleta") + 
+  scale_y_continuous("Tiempo en minutos") + 
+  scale_color_discrete("Sexo")
+```
+
+# Datos {data-icon=ion-connection-bars}
+##
+### Número de participantes por categoría
+```{r}
+pieCategorias=table(CarreraLuz22$categoria)
+pie(pieCategorias)
+```
+
+### Distribución de corredores por rangos de edad
+```{r}
+intervalos = c(10,18,40,50,60,90) # eston son los limites de los intervalos
+Edad.corredores = cut(CarreraLuz22$edad,intervalos)
+
+# Create data
+group <- c(Edad.corredores)
+value <- c(CarreraLuz22$id)
+data <- data.frame(group,value)
+
+# treemap
+treemap(data,
+        index="group",
+        vSize="value",
+        type="index",
+        title="Distribución de corredores por rango de edades",
+        palette=myPal
+)
+```
+
+##
+### Distribución de tiempos Hombres
+```{r}
+x=CarreraLuz22M$timerun/60
+hist(x, xlim=c(40,100), las=1,
+main = "Distribución de los tiempos Hombres",
+xlab="tiempo (min)",
+ylab = "frecuencia",
+col ="#2e857e")
+```
+
+### Distribución de tiempos Mujeres
+```{r}
+x=CarreraLuz22F$timerun/60
+hist(x, xlim=c(40,100), las=1,
+main = "Distribución de los tiempos Mujeres",
+xlab="tiempo (min)",
+ylab = "frecuencia",
+col ="#53f0e3")
+```
+
+# Raw Data {data-icon=ion-clipboard}
+##
+### Datos utilizados
+```{r}
+CarreraLuz22 %>% 
+select(id,sex,edad,origen,timerun,categoria,nacionalidad) %>%
+DT::datatable() #Funcion para mejorar la presentación de la tabla
+```
+
+
+
